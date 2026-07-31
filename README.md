@@ -1,7 +1,8 @@
 # GAP-Track: Bridging the Resolution Gap for Cross-Resolution RGBT Tracking
 
-This repository contains the official implementation of **GAP-Track**, an efficient RGBT tracking framework that bridges the resolution gap by enabling high-precision tracking of **low-resolution inputs**. It is built on top of the **CKD** baseline (Coupled Knowledge Distillation, ACM MM 2024).
+ **🎉 News**: **GAP-Track** has been **accepted by ECCV 2026**! The official implementation and code will be released here.
 
+This repository contains the official implementation of **GAP-Track**, an efficient RGBT tracking framework that bridges the resolution gap by enabling high-precision tracking of **low-resolution inputs**. 
 ## 🎯 Motivation
 
 RGBT tracking on edge devices is often constrained by limited computational power and data transmission bandwidth, necessitating the use of **low-resolution inputs** in real-world deployments. However, such resolution reduction typically leads to severe semantic loss and performance degradation.
@@ -47,7 +48,10 @@ Bold numbers indicate the best performance in each category.
 | **GAP-Track (Ours)** | ECCV'26 | 71.8 / 57.1 / 67.9 | **67.6 / 52.9 / 63.3** | **57.2 / 43.7 / 52.7** |
 
 
-> **Key finding**: GAP-Track delivers superior precision at **1/2 resolution** and continues to significantly outperform the baseline even at **1/4 resolution**, ensuring a robust balance between tracking accuracy and inference efficiency.
+### Key Findings
+- **Superior at reduced resolutions**: GAP-Track achieves state-of-the-art performance on both LasHeR and RGBT234 at 1/2 and 1/4 input resolutions, outperforming all compared trackers (MPLT, CKD, TBSI, CAFormer) in every metric at low resolutions.
+- **Robust precision-efficiency balance**: At **1/2 resolution**, GAP-Track delivers superior precision; even at an extremely challenging **1/4 resolution**, it continues to significantly outperform the baseline — demonstrating that our framework effectively **bridges the resolution gap** for cross-resolution RGBT tracking.
+- **Full resolution**: At full resolution, our method remains highly competitive (e.g., 71.8 PR / 57.1 SR on LasHeR), while the top scores belong to the high-complexity full-res baselines — the design target of GAP-Track is low-resolution efficiency without sacrificing accuracy.
 
 ## 🚀 Installation
 
@@ -58,3 +62,16 @@ cd GAPTrack
 conda create -n gaptrack python=3.8
 conda activate gaptrack
 pip install -r requirement.txt# GAPTrack
+
+## 📝 Citation
+
+If you find this work useful in your research, please consider citing:
+
+```bibtex
+@inproceedings{gaptrack2026,
+  title={GAP-Track: Bridging the Resolution Gap for Cross-Resolution {RGBT} Tracking},
+  author={Zhang, Shiyu and Xu, Tianyang and Tang, Zhangyong and Wang, He and Wu, Xiao-Jun and Kittler, Josef},
+  booktitle={European Conference on Computer Vision (ECCV)},
+  year={2026}
+}
+```
