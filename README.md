@@ -52,8 +52,8 @@ Bold numbers indicate the best performance in each category.
 ## 🚀 Installation
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
+git clone https://github.com/shijiahahaha/GAPTrack.git
+cd GAPTrack
 
 conda create -n gaptrack python=3.8
 conda activate gaptrack
