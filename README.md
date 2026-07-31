@@ -62,6 +62,7 @@ cd GAPTrack
 conda create -n gaptrack python=3.8
 conda activate gaptrack
 pip install -r requirement.txt# GAPTrack
+```
 
 ## 📝 Citation
 
