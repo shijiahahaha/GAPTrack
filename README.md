@@ -72,6 +72,7 @@ If you find this work useful in your research, please consider citing:
   title={GAP-Track: Bridging the Resolution Gap for Cross-Resolution {RGBT} Tracking},
   author={Zhang, Shiyu and Xu, Tianyang and Tang, Zhangyong and Wang, He and Wu, Xiao-Jun and Kittler, Josef},
   booktitle={European Conference on Computer Vision (ECCV)},
-  year={2026}
+  year={2026},
+  note={Accepted, camera-ready version to be updated}
 }
 ```
