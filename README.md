@@ -76,7 +76,7 @@ python tracking/train.py --script gap --config agr_128teacher_64student_0.3mask_
 
 python tracking/test.py gap agr_128teacher_64student_0.3mask_pgs --dataset_name lasher --vis_gpus 0 --num_gpus 1
 
-python tracking/test.py gapd agr_128teacher_64student_0.3mask_pgs --dataset_name rgbt234 --vis_gpus 0 --num_gpus 1
+python tracking/test.py gap agr_128teacher_64student_0.3mask_pgs --dataset_name rgbt234 --vis_gpus 0 --num_gpus 1
 
 ```
 
