@@ -66,17 +66,17 @@ pip install -r requirement.txt# GAPTrack
 
 ## 🚀 Train&Test
 ```bash
-python tracking/train.py --script ckd --config ckd_vitkd_256teacher_128student_0.5mask_sls --save_dir .\output --mode single --use_wandb 0 --use_lmdb 0 --vis_gpus 0
+python tracking/train.py --script gap --config agr_256teacher_128student_0.5mask_pgs --save_dir .\output --mode single --use_wandb 0 --use_lmdb 0 --vis_gpus 0
 
-python tracking/test.py ckd ckd_vitkd_256teacher_128student_0.5mask_sls --dataset_name lasher --vis_gpus 0 --num_gpus 1
+python tracking/test.py gap agr_256teacher_128student_0.5mask_pgs --dataset_name lasher --vis_gpus 0 --num_gpus 1
 
-python tracking/test.py ckd ckd_vitkd_256teacher_128student_0.5mask_sls --dataset_name rgbt234 --vis_gpus 0 --num_gpus 1
+python tracking/test.py gap agr_256teacher_128student_0.5mask_pgs --dataset_name rgbt234 --vis_gpus 0 --num_gpus 1
 
-python tracking/train.py --script ckd --config ckd_vitkd_128teacher_64student_0.3mask_sls --save_dir .\output --mode single --use_wandb 0 --use_lmdb 0 --vis_gpus 0
+python tracking/train.py --script gap --config agr_128teacher_64student_0.3mask_pgs --save_dir .\output --mode single --use_wandb 0 --use_lmdb 0 --vis_gpus 0
 
-python tracking/test.py ckd ckd_vitkd_128teacher_64student_0.3mask_sls --dataset_name lasher --vis_gpus 0 --num_gpus 1
+python tracking/test.py gap agr_128teacher_64student_0.3mask_pgs --dataset_name lasher --vis_gpus 0 --num_gpus 1
 
-python tracking/test.py ckd ckd_vitkd_128teacher_64student_0.3mask_sls --dataset_name rgbt234 --vis_gpus 0 --num_gpus 1
+python tracking/test.py gapd agr_128teacher_64student_0.3mask_pgs --dataset_name rgbt234 --vis_gpus 0 --num_gpus 1
 
 ```
 
