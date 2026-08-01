@@ -9,6 +9,8 @@ RGBT tracking on edge devices is often constrained by limited computational powe
 
 **GAP-Track** tackles this challenge by keeping the precision of high-resolution tracking while operating at much lower input resolutions (1/2× and 1/4×).
 
+![GAP-Track framework](img.png)
+
 ## 🔥 Key Contributions
 
 1. **Hierarchical Knowledge Distillation (HKD)**  

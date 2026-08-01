@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+
+# IDE / Editor
+.idea/
+.vscode/
+.history/
+*.swp
+
+# Training / Inference outputs
+output/
+tracking_result/
+tensorboard/
+logs/
+runs/
+
+# Checkpoints & weights
+*.pth
+*.pth.tar
+*.ckpt
+*.onnx
+pretrained/
+
+# Datasets (do NOT upload)
+data/
+dataset/
+
+# OS
+Thumbs.db
+.DS_Store
