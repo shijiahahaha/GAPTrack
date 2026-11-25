@@ -1,6 +1,9 @@
 import os
 import torch
 import torch.nn as nn
+
+from lib.config.ckd.config import cfg as default_cfg
+from lib.config.ckd.config import clone_config, update_config_from_file
 # loss function related
 from lib.utils.box_ops import giou_loss
 from torch.nn.functional import l1_loss, mse_loss
@@ -57,21 +60,19 @@ try:
 except ImportError:
     DFL_ACTOR_AVAILABLE = False
     print("[Warning] OSTrack_CKD_DFL_Actor not available")
-# for import modules
-import importlib
-
 from ..utils.focal_loss import FocalLoss
 
 
 def run(settings):
-    settings.description = 'Training script for STARK-S, STARK-ST stage1, and STARK-ST stage2'
+    if settings.script_name not in ("ckd", "gap"):
+        raise ValueError(f"Unsupported tracking script: {settings.script_name}")
+    settings.description = f"Training script for {settings.script_name}"
 
     # update the default configs with config file
     if not os.path.exists(settings.cfg_file):
         raise ValueError("%s doesn't exist." % settings.cfg_file)
-    config_module = importlib.import_module("lib.config.%s.config" % settings.script_name)
-    cfg = config_module.cfg
-    config_module.update_config_from_file(settings.cfg_file)
+    cfg = clone_config(default_cfg)
+    update_config_from_file(settings.cfg_file, base_cfg=cfg)
     if settings.local_rank in [-1, 0]:
         print("New configuration is shown below.")
         for key in cfg.keys():
@@ -95,11 +96,7 @@ def run(settings):
         cfg.ckpt_dir = settings.save_dir
 
     # Create network
-    if settings.script_name == "ckd":
-        net = build_ostrack_ckd(cfg)    
-
-    else:
-        raise ValueError("illegal script name")
+    net = build_ostrack_ckd(cfg)
 
     # wrap networks to distributed one
     net.cuda()
@@ -113,56 +110,53 @@ def run(settings):
     settings.distill = getattr(cfg.TRAIN, "DISTILL", False)
     settings.distill_loss_type = getattr(cfg.TRAIN, "DISTILL_LOSS_TYPE", "KL")
     # Loss functions and Actors
-    if settings.script_name in ["ckd"]:  # 
-        focal_loss = FocalLoss()
-        objective = {'giou': giou_loss, 'l1': l1_loss, 'focal': focal_loss, 'cls': BCEWithLogitsLoss()}
-        loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT, 'style': cfg.TRAIN.STYLE_DISTILL_WEIGHT, 
-                       'content': cfg.TRAIN.CONTENT_DISTILL_WEIGHT, 'focal': 1., 'cls': 1.0}
-        # actor = OSTrack_CKD_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
-        
-        # 根据配置选择使用不同的actor版本
-        ckd_loss_type = getattr(cfg.TRAIN, 'CKD_LOSS', 'CKD')
-        enable_response_kd = getattr(cfg.TRAIN, 'ENABLE_RESPONSE_KD', False)
-        enable_sls_loss = getattr(cfg.TRAIN, 'ENABLE_SLS_LOSS', False)  # SLS损失开关
-        enable_dynamic_sls = getattr(cfg.TRAIN, 'ENABLE_DYNAMIC_SLS', False)  # 动态SLS开关
-        actor_type = getattr(cfg.TRAIN, 'ACTOR_TYPE', None)  # 显式指定 actor 类型
-        use_attn_actor = False  # 标记是否使用了带attention的actor
-        
-        # 优先使用 ACTOR_TYPE 配置
-        if actor_type == 'CKD_DFL' and DFL_ACTOR_AVAILABLE:
-            print("[Train] Using OSTrack_CKD_DFL_Actor - Training with DFL (Distribution Focal Loss)")
-            actor = OSTrack_CKD_DFL_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
-            use_attn_actor = True
-        elif enable_sls_loss and enable_dynamic_sls and ckd_loss_type == 'CKD_vitkd' and VITKD_SLS_DYNAMIC_ACTOR_AVAILABLE:
-            print("[Train] Using OSTrack_CKD_ViTKD_SLS_Dynamic_Actor - ViTKD + Dynamic SLS Loss")
-            actor = OSTrack_CKD_ViTKD_SLS_Dynamic_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
-            use_attn_actor = True
-        elif enable_sls_loss and ckd_loss_type == 'CKD_vitkd' and VITKD_SLS_ACTOR_AVAILABLE:
-            print("[Train] Using OSTrack_CKD_ViTKD_SLS_Actor - ViTKD + SLS Loss (standard)")
-            actor = OSTrack_CKD_ViTKD_SLS_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
-            use_attn_actor = True
-        elif enable_response_kd and VITKD_RESP_ACTOR_AVAILABLE:
-            print("[Train] Using OSTrack_CKD_ViTKD_Resp_Actor - ViTKD + Response Map Distillation")
-            actor = OSTrack_CKD_ViTKD_Resp_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
-            use_attn_actor = True
-        elif ckd_loss_type == 'CKD_vitkd' and VITKD_ACTOR_AVAILABLE:
-            print("[Train] Using OSTrack_CKD_ViTKD_Actor - Student upsamples to teacher resolution (ViTKD style)")
-            actor = OSTrack_CKD_ViTKD_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
-            use_attn_actor = True
-        elif ckd_loss_type == 'CKD_ADV' and ATTN_ACTOR_AVAILABLE:
-            print("[Train] Using OSTrack_CKD_Attn_Actor with layer-wise AttentionDownsample")
-            actor = OSTrack_CKD_Attn_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
-            use_attn_actor = True
-        else:
-            print("[Train] Using standard OSTrack_CKD_Actor")
-            actor = OSTrack_CKD_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
-        
-        # 将 ckd_loss 移动到 GPU（因为它是 actor 的子模块，不会自动移动）
-        if hasattr(actor, 'ckd_loss') and isinstance(actor.ckd_loss, torch.nn.Module):
-            actor.ckd_loss = actor.ckd_loss.cuda()
-            print(f"[Train] Moved actor.ckd_loss to GPU")
+    focal_loss = FocalLoss()
+    objective = {'giou': giou_loss, 'l1': l1_loss, 'focal': focal_loss, 'cls': BCEWithLogitsLoss()}
+    loss_weight = {'giou': cfg.TRAIN.GIOU_WEIGHT, 'l1': cfg.TRAIN.L1_WEIGHT, 'style': cfg.TRAIN.STYLE_DISTILL_WEIGHT,
+                   'content': cfg.TRAIN.CONTENT_DISTILL_WEIGHT, 'focal': 1., 'cls': 1.0}
+    # actor = OSTrack_CKD_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+
+    # 根据配置选择使用不同的actor版本
+    ckd_loss_type = getattr(cfg.TRAIN, 'CKD_LOSS', 'CKD')
+    enable_response_kd = getattr(cfg.TRAIN, 'ENABLE_RESPONSE_KD', False)
+    enable_sls_loss = getattr(cfg.TRAIN, 'ENABLE_SLS_LOSS', False)  # SLS损失开关
+    enable_dynamic_sls = getattr(cfg.TRAIN, 'ENABLE_DYNAMIC_SLS', False)  # 动态SLS开关
+    actor_type = getattr(cfg.TRAIN, 'ACTOR_TYPE', None)  # 显式指定 actor 类型
+    use_attn_actor = False  # 标记是否使用了带attention的actor
+
+    # 优先使用 ACTOR_TYPE 配置
+    if actor_type == 'CKD_DFL' and DFL_ACTOR_AVAILABLE:
+        print("[Train] Using OSTrack_CKD_DFL_Actor - Training with DFL (Distribution Focal Loss)")
+        actor = OSTrack_CKD_DFL_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+        use_attn_actor = True
+    elif enable_sls_loss and enable_dynamic_sls and ckd_loss_type == 'CKD_vitkd' and VITKD_SLS_DYNAMIC_ACTOR_AVAILABLE:
+        print("[Train] Using OSTrack_CKD_ViTKD_SLS_Dynamic_Actor - ViTKD + Dynamic SLS Loss")
+        actor = OSTrack_CKD_ViTKD_SLS_Dynamic_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+        use_attn_actor = True
+    elif enable_sls_loss and ckd_loss_type == 'CKD_vitkd' and VITKD_SLS_ACTOR_AVAILABLE:
+        print("[Train] Using OSTrack_CKD_ViTKD_SLS_Actor - ViTKD + SLS Loss (standard)")
+        actor = OSTrack_CKD_ViTKD_SLS_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+        use_attn_actor = True
+    elif enable_response_kd and VITKD_RESP_ACTOR_AVAILABLE:
+        print("[Train] Using OSTrack_CKD_ViTKD_Resp_Actor - ViTKD + Response Map Distillation")
+        actor = OSTrack_CKD_ViTKD_Resp_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+        use_attn_actor = True
+    elif ckd_loss_type == 'CKD_vitkd' and VITKD_ACTOR_AVAILABLE:
+        print("[Train] Using OSTrack_CKD_ViTKD_Actor - Student upsamples to teacher resolution (ViTKD style)")
+        actor = OSTrack_CKD_ViTKD_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+        use_attn_actor = True
+    elif ckd_loss_type == 'CKD_ADV' and ATTN_ACTOR_AVAILABLE:
+        print("[Train] Using OSTrack_CKD_Attn_Actor with layer-wise AttentionDownsample")
+        actor = OSTrack_CKD_Attn_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+        use_attn_actor = True
     else:
-        raise ValueError("illegal script name")
+        print("[Train] Using standard OSTrack_CKD_Actor")
+        actor = OSTrack_CKD_Actor(net=net, objective=objective, loss_weight=loss_weight, settings=settings, cfg=cfg)
+
+    # 将 ckd_loss 移动到 GPU（因为它是 actor 的子模块，不会自动移动）
+    if hasattr(actor, 'ckd_loss') and isinstance(actor.ckd_loss, torch.nn.Module):
+        actor.ckd_loss = actor.ckd_loss.cuda()
+        print(f"[Train] Moved actor.ckd_loss to GPU")
 
     # if cfg.TRAIN.DEEP_SUPERVISION:
     #     raise ValueError("Deep supervision is not supported now.")

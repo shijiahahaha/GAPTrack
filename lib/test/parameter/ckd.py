@@ -1,16 +1,17 @@
-from lib.test.utils import TrackerParams
 import os
+
+from lib.config.ckd.config import cfg as default_cfg
+from lib.config.ckd.config import clone_config, update_config_from_file
 from lib.test.evaluation.environment import env_settings
-from lib.config.ckd.config import cfg, update_config_from_file
+from lib.test.utils import TrackerParams
 
 
-def parameters(yaml_name: str, checkpoint_path=None):
+def parameters(yaml_name: str, checkpoint_path=None, *, experiment="ckd"):
     params = TrackerParams()
     prj_dir = env_settings().prj_dir
-    save_dir = env_settings().save_dir
-    # update default config from yaml file
-    yaml_file = os.path.join(prj_dir, 'experiments/ckd/%s.yaml' % yaml_name)
-    update_config_from_file(yaml_file)
+    yaml_file = os.path.join(prj_dir, "experiments", experiment, f"{yaml_name}.yaml")
+    cfg = clone_config(default_cfg)
+    update_config_from_file(yaml_file, base_cfg=cfg)
     params.cfg = cfg
     print("test config: ", cfg)
 
@@ -21,12 +22,12 @@ def parameters(yaml_name: str, checkpoint_path=None):
     params.search_size = cfg.TEST.SEARCH_SIZE
 
     # Network checkpoint path
-    if checkpoint_path!=None:
-        params.checkpoint = checkpoint_path
-    else:
-        params.checkpoint = "./output/checkpoints/train/ckd/%s/OSTrack_CKD_ep%04d.pth.tar" % (yaml_name, cfg.TEST.EPOCH)
-        # os.path.join(save_dir, "../output/checkpoints/train/ostrack_twobranch/%s/OSTrack_twobranch_ep%04d.pth.tar" %
-        #                                 (yaml_name, cfg.TEST.EPOCH))
+    if checkpoint_path is None:
+        checkpoint_path = os.path.join(
+            prj_dir, "output", "checkpoints", "train", experiment, yaml_name,
+            f"OSTrack_CKD_ep{cfg.TEST.EPOCH:04d}.pth.tar",
+        )
+    params.checkpoint = checkpoint_path
 
     # whether to save boxes from all queries
     params.save_all_boxes = False

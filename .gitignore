@@ -28,6 +28,8 @@ pretrained/
 # Datasets (do NOT upload)
 data/
 dataset/
+!/lib/train/data/
+!/lib/train/dataset/
 
 # OS
 Thumbs.db

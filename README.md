@@ -67,14 +67,26 @@ pip install -r requirement.txt# GAPTrack
 ```
 
 ## 🚀 Train&Test
+
+Run the commands from the repository root. Put LasHeR in `data/LasHeR` with
+`train/trainingset`, `test/testingset`, and `testingsetList.txt`. Put RGBT234
+in `data/RGBT234`. If the datasets are elsewhere, set `GAPTRACK_LASHER_ROOT`
+and `GAPTRACK_RGBT234_ROOT` to their root directories.
+
+Before training, place the pretrained weights named in the experiment YAML
+under `pretrained/` or update the paths in the YAML. By default, testing
+loads `output/checkpoints/train/gap/<config>/OSTrack_CKD_ep<epoch>.pth.tar`,
+with the epoch set by `TEST.EPOCH` in the YAML. Use `--checkpoint_path` to
+select a different checkpoint.
+
 ```bash
-python tracking/train.py --script gap --config agr_256teacher_128student_0.5mask_pgs --save_dir .\output --mode single --use_wandb 0 --use_lmdb 0 --vis_gpus 0
+python tracking/train.py --script gap --config agr_256teacher_128student_0.5mask_pgs --save_dir ./output --mode single --use_wandb 0 --use_lmdb 0 --vis_gpus 0
 
 python tracking/test.py gap agr_256teacher_128student_0.5mask_pgs --dataset_name lasher --vis_gpus 0 --num_gpus 1
 
 python tracking/test.py gap agr_256teacher_128student_0.5mask_pgs --dataset_name rgbt234 --vis_gpus 0 --num_gpus 1
 
-python tracking/train.py --script gap --config agr_128teacher_64student_0.3mask_pgs --save_dir .\output --mode single --use_wandb 0 --use_lmdb 0 --vis_gpus 0
+python tracking/train.py --script gap --config agr_128teacher_64student_0.3mask_pgs --save_dir ./output --mode single --use_wandb 0 --use_lmdb 0 --vis_gpus 0
 
 python tracking/test.py gap agr_128teacher_64student_0.3mask_pgs --dataset_name lasher --vis_gpus 0 --num_gpus 1
 

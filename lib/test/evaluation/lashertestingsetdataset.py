@@ -6,7 +6,7 @@ class LasHeRtestingSetDataset(BaseDataset):
     # LasHeR dataset
     def __init__(self):
         super().__init__()
-        self.base_path = self.env_settings.lasher_path
+        self.base_path = self.env_settings.lashertestingset_path
         self.sequence_list = self._get_sequence_list()
 
     def get_sequence_list(self):
@@ -45,9 +45,8 @@ class LasHeRtestingSetDataset(BaseDataset):
         for i in range(len(sequence_list)):
             sequence_info = {}
             sequence_info["name"] = sequence_list[i] 
-            sequence_info["path"] = self.base_path+sequence_info["name"]
-            sequence_info["anno_path"] = sequence_info["path"]+'/init.txt'
+            sequence_info["path"] = os.path.join(self.base_path, sequence_info["name"])
+            sequence_info["anno_path"] = os.path.join(sequence_info["path"], "init.txt")
             #sequence_info["object_class"] = 'person'
             sequence_info_list.append(sequence_info)
         return sequence_info_list
-    
